@@ -1,0 +1,23 @@
+{
+  "name": "qeres",
+  "version": "1.0.0",
+  "description": "The easiest way to create an API",
+  "main": "dist/index.js",
+  "dependencies": {
+    "typescript": "^4.2.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "cd dist; node index.js",
+    "dev": "npm run build; npm run start",
+    "build": "tsc",
+    "test": "echo 'Still not implemented, TBD'"
+  },
+  "keywords": [
+    "Qeres",
+    "Rest",
+    "GraphQL",
+    "API"
+  ],
+  "author": "Ben Timor"
+}
