@@ -1,12 +1,13 @@
 {
   "name": "qeres",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "The easiest way to create an API",
   "main": "dist/index.js",
   "dependencies": {
+  },
+  "devDependencies": {
     "typescript": "^4.2.2"
   },
-  "devDependencies": {},
   "scripts": {
     "start": "cd dist; node index.js",
     "dev": "npm run build; npm run start",
