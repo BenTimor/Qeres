@@ -11,15 +11,13 @@ export class Qeres {
     /**
      * @param baseFunctions All the functions which can be called by the request (Only relevant for root-calls)
      */
-    constructor(...baseFunctions: Function[]) {
-        // Parsing the functions array to a dictionary for perfornace reasons
-        for (const func of baseFunctions) {
+    constructor(rootAPI) {
+        Qeres.getMethods(rootAPI).forEach(func => {
             this.funcs[func.name] = func;
-        }
+        });
     }
 
-    private async getMethods(func: string) {
-        const obj = await this.parseFunction(func, "path");
+    private static getMethods(obj: any) {
         // Getting all methods
         const objFuncs = Object.getOwnPropertyNames(obj.constructor.prototype);
 
@@ -69,19 +67,19 @@ export class Qeres {
 
         for (const [key, value] of Object.entries(req)) {
             // If the value is string, We want to parse it like a function
-            if (typeof (value) === "string") {                
+            if (typeof (value) === "string") {
                 results[key] = await this.parseFunction(value, "data");
             }
             // If the value is object, We want to parse it recursively
             else {
-                const tempQeres = new Qeres(...await this.getMethods(key));
+                const tempQeres = new Qeres(await this.parseFunction(key, "path"));
 
                 results = {
                     ...results,
                     ...await tempQeres.handleRequest(value)
                 }
             }
-        }        
+        }
 
         return results;
     }
