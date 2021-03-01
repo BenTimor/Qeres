@@ -25,8 +25,15 @@ export class Qeres {
 
         // Filtering constructor & returning the functions themself
         return objFuncs.filter(funcName => funcName !== "constructor").map(funcName => {
-            const func: Function = obj[funcName];
-            func.bind(obj);
+            function func(...args) {
+                return obj[funcName](...args);
+            }
+
+            Object.defineProperty(func, 'name', {
+                value: funcName,
+                configurable: true,
+            })
+
             return func;
         });
     }
