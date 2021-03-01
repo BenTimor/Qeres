@@ -19,12 +19,12 @@ export class Qeres {
     }
 
     private async getMethods(func: string) {
-        const obj = await this.parseFunction(func);
+        const obj = await this.parseFunction(func, "path");
         // Getting all methods
         const objFuncs = Object.getOwnPropertyNames(obj.constructor.prototype);
 
         // Filtering constructor & returning the functions themself
-        return objFuncs.filter(funcName => funcName !== "constructor").map(funcName => {
+        return objFuncs.map(funcName => {
             function func(...args) {
                 return obj[funcName](...args);
             }
@@ -34,21 +34,30 @@ export class Qeres {
                 configurable: true,
             })
 
+            func.allowQeresData = obj[funcName].allowQeresData;
+            func.allowQeresPath = obj[funcName].allowQeresPath;
+
             return func;
         });
     }
 
-    private async parseFunction(func: string) {
+    private async parseFunction(func: string, validateType: "data" | "path") {
         const matches = Qeres.toParamsRegex.exec(func);
         if (!matches) {
             return undefined;
         }
 
-        const funcName = matches[0].replace("(", "");
-        const params = func.replace(matches[0], "").replace(/\)$/, "") // Getting the params as string by replacing the first match ( 'name(' ) and replacing the last ')'
-            .split(Qeres.commasRegex).map(v => v.replace(Qeres.stripRegex, '')); // Splitting params to array & stripping the values
+        const executableFunction = this.funcs[matches[0].replace("(", "")];
 
-        return await this.funcs[funcName](...params);
+        // Validate type
+        if (!((validateType === "data" && executableFunction.allowQeresData) || (validateType === "path" && executableFunction.allowQeresPath))) {
+            return undefined;
+        }
+
+        const params = func.replace(matches[0], "").replace(/\)$/, "") // Getting the params as string by replacing the first match ( 'name(' ) and replacing the last ')'
+            .split(Qeres.commasRegex).map(v => v.replace(Qeres.stripRegex, '')); // Splitting params to array & stripping the values        
+
+        return await executableFunction(...params);
     }
 
     /**
@@ -60,8 +69,8 @@ export class Qeres {
 
         for (const [key, value] of Object.entries(req)) {
             // If the value is string, We want to parse it like a function
-            if (typeof (value) === "string") {
-                results[key] = await this.parseFunction(value);
+            if (typeof (value) === "string") {                
+                results[key] = await this.parseFunction(value, "data");
             }
             // If the value is object, We want to parse it recursively
             else {
@@ -72,8 +81,18 @@ export class Qeres {
                     ...await tempQeres.handleRequest(value)
                 }
             }
-        }
+        }        
 
         return results;
+    }
+
+    // Decorators
+
+    static data(target, key, _descriptor: TypedPropertyDescriptor<any>) {
+        target[key].allowQeresData = true;
+    }
+
+    static path(target, key, _descriptor: TypedPropertyDescriptor<any>) {
+        target[key].allowQeresPath = true;
     }
 }
