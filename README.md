@@ -1,4 +1,4 @@
-# Qeres - The easiers and most flexible way to create APIs
+# Qeres - The easiest and most flexible way to create APIs
 
 ## What is Qeres?
 
@@ -42,13 +42,13 @@ Basically, We're just telling the server how to name our data and what data we n
 
 Qeres is method-based. Everything we can request from our API, has to be created as a method.
 
-Additionally, Every method has to be created inside a class. It's because we're going to need to decorate the method, and [JavaScript won't allow us to decorate functions outside of a class](https://github.com/Microsoft/TypeScript/issues/3661). 
+Additionally, Every method has to be created inside a class (The method can be static). It's because we're going to need to decorate the method, and [JavaScript won't allow us to decorate functions outside of a class](https://github.com/Microsoft/TypeScript/issues/3661). 
 
 Now lets say we want to allow the user to request our terms of use. We'll create a class with a method which returns our terms of use, Like this:
 
     class RootAPI {
 	    @Qeres.data
-	    termsOfUse() {
+	    static termsOfUse() {
 		    return "We're the champions";
 	    }
     } 
@@ -100,9 +100,11 @@ For example lets say we have a "Math" class which allows the user to use math me
 Now, lets create a new method in our RootAPI class which returns the Math object:
 
 	@Qeres.path
-	math(a: number, b: number) {
-		return new Math(a, b);
+	static math(a: string, b: string) {
+		return new Math(+a, +b);
 	}
+
+**Note2:** Right now Qeres can only supply number typed parameters, so we have to convert the parameters ourselves.
 
 **Request example:**
 
@@ -132,8 +134,8 @@ All we have to do to create a method like this, Is to add both `@Qeres.data` and
 
 	@Qeres.data
 	@Qeres.path
-	math(a: number, b: number) {
-		return new Math(a, b);
+	static math(a: string, b: string) {
+		return new Math(+a, +b);
 	}
 
 ### The Qeres object
@@ -142,7 +144,7 @@ In Qeres, everything happens inside its object. It's done like this because we w
 
 When we create the Qeres object, we have to tell Qeres what root methods we have. This is how it looks:
 
-	const qeres = new Qeres(new RootAPI());
+	const qeres = new Qeres(RootAPI.termsOfUse, RootAPI.math);
 
 Now, Qeres is going to allow the user to access only "termsOfUse" and "math" methods. Unless you use a *path* method (like math), And than it allows you to access the object's functions.
 

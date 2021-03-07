@@ -1,3 +1,5 @@
+import { QeresError } from "./errors";
+
 /**
  * Qeres is a new way to create APIs easily. It's more flexible than REST, and more easy than GraphQL.
  */
@@ -9,22 +11,27 @@ export class Qeres {
     private funcs = {};
 
     /**
-     * @param baseFunctions All the functions which can be called by the request (Only relevant for root-calls)
+     * @param rootAPI An object which is used as the first "endpoint" of the API.
+     *                The user will be able to call directly only to the methods of the rootAPI object.
      */
-    constructor(rootAPI) {
-        Qeres.getMethods(rootAPI).forEach(func => {
-            this.funcs[func.name] = func;
-        });
+    constructor(private readonly rootAPI: any) {
+        if (!(rootAPI instanceof QeresError)) {
+            this.getMethods().forEach(func => {
+                this.funcs[func.name] = func;
+            });
+        }
     }
 
-    private static getMethods(obj: any) {
+    private getMethods() {
         // Getting all methods
-        const objFuncs = Object.getOwnPropertyNames(obj.constructor.prototype);
+        const objFuncs = Object.getOwnPropertyNames(this.rootAPI.constructor.prototype);
 
-        // Filtering constructor & returning the functions themself
+        // returning the functions themself
         return objFuncs.map(funcName => {
+            const rootAPI = this.rootAPI;
+
             function func(...args) {
-                return obj[funcName](...args);
+                return rootAPI[funcName](...args);
             }
 
             Object.defineProperty(func, 'name', {
@@ -32,30 +39,45 @@ export class Qeres {
                 configurable: true,
             })
 
-            func.allowQeresData = obj[funcName].allowQeresData;
-            func.allowQeresPath = obj[funcName].allowQeresPath;
+            func.allowQeresData = rootAPI[funcName].allowQeresData;
+            func.allowQeresPath = rootAPI[funcName].allowQeresPath;
 
             return func;
         });
     }
 
     private async parseFunction(func: string, validateType: "data" | "path") {
+        // If we throwed an error before, we want to keep it
+        // This way every variable is "inheriting" the error before
+        if (this.rootAPI instanceof QeresError) {
+            return this.rootAPI;
+        }
+
         const matches = Qeres.toParamsRegex.exec(func);
         if (!matches) {
-            return undefined;
+            return QeresError.INVALID_STATEMENT(func);
         }
 
         const executableFunction = this.funcs[matches[0].replace("(", "")];
 
+        if (!executableFunction) {
+            return QeresError.METHOD_NOT_FOUND(func);
+        }
+
         // Validate type
         if (!((validateType === "data" && executableFunction.allowQeresData) || (validateType === "path" && executableFunction.allowQeresPath))) {
-            return undefined;
+            return QeresError.METHOD_ACCESS(func);
         }
 
         const params = func.replace(matches[0], "").replace(/\)$/, "") // Getting the params as string by replacing the first match ( 'name(' ) and replacing the last ')'
             .split(Qeres.commasRegex).map(v => v.replace(Qeres.stripRegex, '')); // Splitting params to array & stripping the values        
 
-        return await executableFunction(...params);
+        try {
+            return await executableFunction(...params);
+        }
+        catch (error) {
+            return QeresError.METHOD_ERRPR(func, error);
+        }
     }
 
     /**
