@@ -144,7 +144,7 @@ In Qeres, everything happens inside its object. It's done like this because we w
 
 When we create the Qeres object, we have to tell Qeres what root methods we have. This is how it looks:
 
-	const qeres = new Qeres(RootAPI.termsOfUse, RootAPI.math);
+	const qeres = new Qeres(new RootAPI());
 
 Now, Qeres is going to allow the user to access only "termsOfUse" and "math" methods. Unless you use a *path* method (like math), And than it allows you to access the object's functions.
 
