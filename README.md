@@ -95,7 +95,7 @@ For example lets say we have a "Math" class which allows the user to use math me
 		}
 	}
 
-**Note:** We don't have `@Qeres.data` on our multipication method, so the user is going to get "undefined" if he try to access it.
+**Note:** We don't have `@Qeres.data` on our multipication method, so the user is going to get an error if he try to access it.
 
 Now, lets create a new method in our RootAPI class which returns the Math object:
 
@@ -121,7 +121,7 @@ Now, lets create a new method in our RootAPI class which returns the Math object
 	{
 		"plus": 15,
 		"minus": -5,
-		"multi": undefined
+		"multi": "[Qeres] Error: The statement 'multiplication()' throwed an error: The method can't be accessed. You may be able to access this method in a different way."
 	}
 
 **Note:** With path methods, instead of telling the server how to name them, we tell the server what methods we want to get from them. It runs recursively so we can have a method inside a method inside a method...
