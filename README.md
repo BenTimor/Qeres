@@ -121,7 +121,10 @@ Now, lets create a new method in our RootAPI class which returns the Math object
 	{
 		"plus": 15,
 		"minus": -5,
-		"multi": "[Qeres] Error: The statement 'multiplication()' throwed an error: The method can't be accessed. You may be able to access this method in a different way."
+		"multi": {
+			error: "The method can't be accessed. You may be able to access this method in a different way",
+			status: 403
+		}
 	}
 
 **Note:** With path methods, instead of telling the server how to name them, we tell the server what methods we want to get from them. It runs recursively so we can have a method inside a method inside a method...
@@ -137,6 +140,56 @@ All we have to do to create a method like this, Is to add both `@Qeres.data` and
 	static math(a: string, b: string) {
 		return new Math(+a, +b);
 	}
+
+### Custom Errors
+
+If you want to throw an error and send it to the client, You have to create a custom error by extending `QeresError` object. You can do it like this:
+
+	class WrongPassword extends QeresError {
+		constructor(public username  /* Additional fields */) {
+			super("You used the wrong password, try again"  /* Message */, 401  /* Status */);
+		}
+	}
+
+And then you can use it inside a Qeres method like this:
+
+	@Qeres.data
+	login(username, password) {
+		// LOGIC
+		throw new WrongPassword(username);
+	}
+
+### Query Variables
+
+To reduce the amount of requests to the server as much as possible, You can store variables in the query itself. This way you won't have to get information from the server and then send it again for another method. For example, Lets say we have those `hello` and `world` methods:
+
+	export class RootAPI {
+	    @Qeres.data
+	    world() {
+	        return "WORLD";
+	    }
+
+	    @Qeres.data
+	    hello(who: string) {
+	        return `HELLO ${who}`;
+	    }
+	}
+
+We want the server to return us `"HELLO WORLD"`. Instead of requesting the `world` method and then sending another request for the `hello` method, we can do it like this:
+
+	{
+	    "temp": "world()",
+	    "theMessageIWanted": "hello(${temp})"
+	}
+
+And then the response is going to be:
+
+	{
+	    "temp": "WORLD",
+	    "theMessageIWanted": "HELLO WORLD"
+	}
+
+**Note:** You have to create the variable you want to use before you use it.
 
 ### The Qeres object
 
