@@ -104,7 +104,7 @@ Now, lets create a new method in our RootAPI class which returns the Math object
 		return new Math(+a, +b);
 	}
 
-**Note2:** Right now Qeres can only supply number typed parameters, so we have to convert the parameters ourselves.
+**Note2:** Right now Qeres can only supply string typed parameters, so we have to convert the parameters ourselves.
 
 **Request example:**
 
