@@ -1,30 +1,13 @@
-import { Qeres } from ".";
-
 export class QeresError {
-    // Regex
-    static INVALID_STATEMENT = QeresError.new("Invalid statement: The statement should be a call for a method");
-
-    // Methods
-    static METHOD_NOT_FOUND = QeresError.new("The method is not found");
-    static METHOD_ACCESS = QeresError.new("The method can't be accessed. You may be able to access this method in a different way.");
-    static METHOD_ERRPR = QeresError.new("The method is accessed and found, but it throwed an error");
-
-    // Class itself
-    public message: string;
-
-    private constructor(message: string, statement: string, error?: any) {
-        this.message = `[Qeres] Error: The statement '${statement}' throwed an error: ${message}${error ? ' | ' + error : ''}`;
+    constructor(public error?: string, public status?: number) {
+        //
     }
+}
 
-    private static new(message: string): ((statement: string, error?: any) => QeresError) {
-        return (statement: string, error?: any) => new QeresError(message, statement, error);
-    }
+export namespace QeresErrors {
+    export const INVALID_STATEMENT = new QeresError("Invalid statement: The statement should be a call for a method", 400);
+    export const METHOD_NOT_FOUND = new QeresError("The method is not found", 404);
+    export const METHOD_ACCESS = new QeresError("The method can't be accessed. You may be able to access this method in a different way.", 403);
+    export const METHOD_ERROR = new QeresError("The method is accessed and found, but it throwed an unknown error", 500);
 
-    toString() {
-        return this.message;
-    }
-
-    toJSON() {
-        return this.toString();
-    }
 }

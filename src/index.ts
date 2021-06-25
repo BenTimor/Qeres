@@ -1,4 +1,5 @@
-import { QeresError } from "./errors";
+import { QeresError, QeresErrors } from "./errors";
+export * from "./errors";
 
 /**
  * Qeres is a new way to create APIs easily. It's more flexible than REST, and more easy than GraphQL.
@@ -55,18 +56,18 @@ export class Qeres {
 
         const matches = Qeres.toParamsRegex.exec(func);
         if (!matches) {
-            return QeresError.INVALID_STATEMENT(func);
+            return QeresErrors.INVALID_STATEMENT;
         }
 
         const executableFunction = this.funcs[matches[0].replace("(", "")];
 
         if (!executableFunction) {
-            return QeresError.METHOD_NOT_FOUND(func);
+            return QeresErrors.METHOD_NOT_FOUND;
         }
 
         // Validate type
         if (!((validateType === "data" && executableFunction.allowQeresData) || (validateType === "path" && executableFunction.allowQeresPath))) {
-            return QeresError.METHOD_ACCESS(func);
+            return QeresErrors.METHOD_ACCESS;
         }
 
         const params = func.replace(matches[0], "").replace(/\)$/, "") // Getting the params as string by replacing the first match ( 'name(' ) and replacing the last ')'
@@ -76,7 +77,11 @@ export class Qeres {
             return await executableFunction(...params);
         }
         catch (error) {
-            return QeresError.METHOD_ERRPR(func, error);
+            if (error instanceof QeresError) {
+                return error;
+            }
+            console.error(error);
+            return QeresErrors.METHOD_ERROR;
         }
     }
 
