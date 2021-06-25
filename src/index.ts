@@ -8,6 +8,7 @@ export class Qeres {
     static readonly toParamsRegex = /\w+\(/;
     static readonly commasRegex = /(?<!\\),/g;
     static readonly stripRegex = /^\s+|\s+$/g;
+    static readonly queryVariablesRegex = /(?<!\\)\${(.+)}/g;
 
     private funcs = {};
 
@@ -47,7 +48,7 @@ export class Qeres {
         });
     }
 
-    private async parseFunction(func: string, validateType: "data" | "path") {
+    private async parseFunction(func: string, validateType: "data" | "path", results: any) {
         // If we throwed an error before, we want to keep it
         // This way every variable is "inheriting" the error before
         if (this.rootAPI instanceof QeresError) {
@@ -71,7 +72,14 @@ export class Qeres {
         }
 
         const params = func.replace(matches[0], "").replace(/\)$/, "") // Getting the params as string by replacing the first match ( 'name(' ) and replacing the last ')'
-            .split(Qeres.commasRegex).map(v => v.replace(Qeres.stripRegex, '')); // Splitting params to array & stripping the values        
+            .split(Qeres.commasRegex).map(v => v.replace(Qeres.stripRegex, '')) // Splitting params to array & stripping the values
+            .map(v => {
+                const withRegex = Qeres.queryVariablesRegex.exec(v);
+                // Resetting regex because it 'stateful'
+                Qeres.queryVariablesRegex.lastIndex = 0;
+                
+                return withRegex ? results[withRegex[1]] : v;
+            }); // Allowing query varialbes
 
         try {
             return await executableFunction(...params);
@@ -95,11 +103,11 @@ export class Qeres {
         for (const [key, value] of Object.entries(req)) {
             // If the value is string, We want to parse it like a function
             if (typeof (value) === "string") {
-                results[key] = await this.parseFunction(value, "data");
+                results[key] = await this.parseFunction(value, "data", results);
             }
             // If the value is object, We want to parse it recursively
             else {
-                const tempQeres = new Qeres(await this.parseFunction(key, "path"));
+                const tempQeres = new Qeres(await this.parseFunction(key, "path", results));
 
                 results = {
                     ...results,
