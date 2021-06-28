@@ -159,6 +159,50 @@ And then you can use it inside a Qeres method like this:
 		throw new WrongPassword(username);
 	}
 
+### Accessing Objects
+
+Sometimes you get an object from the API and you don't want the full object. In this case, you can specify what you want to get.
+For example, lets say we have this method, which returns text, status and moreInfo:
+
+    @Qeres.data
+    textAndStatus() {
+        return {
+            text: "BANANA",
+            status: 200,
+            moreInfo: {
+                hello: "World",
+                world: "Hello",
+            }
+        };
+    }
+
+If we call this method, this is how our Qeres response gonna look like:
+
+	{
+	    "textAndStatus": {
+	        "text": "BANANA",
+	        "status": 200,
+	        "moreInfo": {
+	            "hello": "World",
+	            "world": "Hello"
+	        }
+	    }
+	}
+
+But now we want only the `text` and `hello`. Because honestly, Who cares about statuses and the world? We can do it like this:
+
+	{
+	    "{text, moreInfo.hello}": "textAndStatus()"
+	}
+
+And then we're gonna get this reponse:
+
+	{
+	    "text": "BANANA",
+	    "hello": "World"
+	}
+
+
 ### Query Variables
 
 To reduce the amount of requests to the server as much as possible, You can store variables in the query itself. This way you won't have to get information from the server and then send it again for another method. For example, Lets say we have those `hello` and `world` methods:

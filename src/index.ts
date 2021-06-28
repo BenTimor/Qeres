@@ -9,6 +9,7 @@ export class Qeres {
     static readonly commasRegex = /(?<!\\),/g;
     static readonly stripRegex = /^\s+|\s+$/g;
     static readonly queryVariablesRegex = /(?<!\\)\${(.+)}/g;
+    static readonly objVarNameRegex = /{(.+)}/g;
 
     private funcs = {};
 
@@ -103,7 +104,29 @@ export class Qeres {
         for (const [key, value] of Object.entries(req)) {
             // If the value is string, We want to parse it like a function
             if (typeof (value) === "string") {
-                results[key] = await this.parseFunction(value, "data", results);
+                const withRegex = Qeres.objVarNameRegex.exec(key);
+                Qeres.objVarNameRegex.lastIndex = 0;
+
+                const temp = await this.parseFunction(value, "data", results);
+
+                // It's used for when wanting to split objects, Like "{banana, apple}": "getBananasAndApples()"
+                if (withRegex) {
+                    const keys = withRegex[1].split(",").map(key => key.replace(Qeres.stripRegex, ""));
+                    keys.forEach(fullKey => {
+                        const fullKeys = fullKey.split(".");
+                        let tempValue = temp;
+
+                        fullKey.split(".").forEach(key => {
+                            tempValue = tempValue[key];
+                        })
+
+                        results[`${fullKeys.pop()}`] = tempValue;
+                    });
+                }
+                else {
+                    results[key] = temp;
+                }
+
             }
             // If the value is object, We want to parse it recursively
             else {
