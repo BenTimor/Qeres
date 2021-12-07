@@ -104,7 +104,9 @@ Now, lets create a new method in our RootAPI class which returns the Math object
 		return new Math(+a, +b);
 	}
 
-**Note2:** Right now Qeres can only supply string typed parameters, so we have to convert the parameters ourselves.
+**Note2:** Right now if you don't change your parameters values (as explained at **The Qeres object** part) you can only pass `string` parameters **directly** to the function. 
+
+But, You can pass `object` paremters by setting them in Query Variables (as explained at **Query Variables** part) or pass any other type which's returned from Qeres data methods by passing it into query variable.
 
 **Request example:**
 
@@ -139,24 +141,6 @@ All we have to do to create a method like this, Is to add both `@Qeres.data` and
 	@Qeres.path
 	static math(a: string, b: string) {
 		return new Math(+a, +b);
-	}
-
-### Custom Errors
-
-If you want to throw an error and send it to the client, You have to create a custom error by extending `QeresError` object. You can do it like this:
-
-	class WrongPassword extends QeresError {
-		constructor(public username  /* Additional fields */) {
-			super("You used the wrong password, try again"  /* Message */, 401  /* Status */);
-		}
-	}
-
-And then you can use it inside a Qeres method like this:
-
-	@Qeres.data
-	login(username, password) {
-		// LOGIC
-		throw new WrongPassword(username);
 	}
 
 ### Accessing Objects
@@ -233,7 +217,35 @@ And then the response is going to be:
 	    "theMessageIWanted": "HELLO WORLD"
 	}
 
-**Note:** You have to create the variable you want to use before you use it.
+Additionally, We can just set custom variables (without calling method) by putting `$` before the variable name. Those variables can be both object typed and string typed, like this:
+
+	{
+	    "$stringVariable": "myVar",
+	    "$objectVariable": {
+	        "something": "1"
+	    },
+	    "theMessageIWanted": "hello(${stringVariable})
+	}
+
+**Note:** You have to create the variable you want to use **before** you use it.
+
+### Custom Errors
+
+If you want to throw an error and send it to the client, You have to create a custom error by extending `QeresError` object. You can do it like this:
+
+	class WrongPassword extends QeresError {
+		constructor(public username  /* Additional fields */) {
+			super("You used the wrong password, try again"  /* Message */, 401  /* Status */);
+		}
+	}
+
+And then you can use it inside a Qeres method like this:
+
+	@Qeres.data
+	login(username, password) {
+		// LOGIC
+		throw new WrongPassword(username);
+	}
 
 ### The Qeres object
 
@@ -244,6 +256,30 @@ When we create the Qeres object, we have to tell Qeres what root methods we have
 	const qeres = new Qeres(new RootAPI());
 
 Now, Qeres is going to allow the user to access only "termsOfUse" and "math" methods. Unless you use a *path* method (like math), And than it allows you to access the object's functions.
+
+Additionally, You can parse the parameters values who enter into Qeres before passing them into the function by passing a second parameter to the Qeres constructor. 
+
+For example, If I want to convert every string that starts with `+` to number, I can do it like this:
+
+	function parser(value: string | object) {
+	    if (typeof value === "string") {
+	        if (value.startsWith("+")) {
+	            return +value;
+	        }
+	    }
+	    // If we return undefined, It's gonna use value as is
+	}
+
+	const qeres = new Qeres(new Root(), parser);
+
+And then the request is going to look like this:
+
+	{
+	    "num1": "+1",
+	    "sum": "add(${num1}, +2)"
+	}
+
+Then sum is going to be equal to 3 even if `add` wouldn't convert its parameters to number.
 
 ### Handling Requests
 
