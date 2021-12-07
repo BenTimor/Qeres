@@ -19,7 +19,12 @@
     "Qeres",
     "Rest",
     "GraphQL",
-    "API"
+    "API",
+    "Express"
   ],
-  "author": "Ben Timor"
+  "author": "Ben Timor",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BenTimor/Qeres"
+  }
 }

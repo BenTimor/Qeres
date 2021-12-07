@@ -5,11 +5,11 @@ export * from "./errors";
  * Qeres is a new way to create APIs easily. It's more flexible than REST, and more easy than GraphQL.
  */
 export class Qeres {
-    static readonly toParamsRegex = /\w+\(/;
     static readonly commasRegex = /(?<!\\),/g;
     static readonly stripRegex = /^\s+|\s+$/g;
     static readonly queryVariablesRegex = /(?<!\\)\${(.+)}/g;
     static readonly objVarNameRegex = /{(.+)}/g;
+    static readonly toParamsRegex = /\w+\(/;
 
     private funcs = {};
 
@@ -17,7 +17,7 @@ export class Qeres {
      * @param rootAPI An object which is used as the first "endpoint" of the API.
      *                The user will be able to call directly only to the methods of the rootAPI object.
      */
-    constructor(private readonly rootAPI: any) {
+    constructor(private readonly rootAPI: any, private readonly onParamValue?: (value: string | object) => any) {
         if (!(rootAPI instanceof QeresError)) {
             this.getMethods().forEach(func => {
                 this.funcs[func.name] = func;
@@ -57,6 +57,7 @@ export class Qeres {
         }
 
         const matches = Qeres.toParamsRegex.exec(func);
+
         if (!matches) {
             return QeresErrors.INVALID_STATEMENT;
         }
@@ -72,17 +73,31 @@ export class Qeres {
             return QeresErrors.METHOD_ACCESS;
         }
 
-        const params = func.replace(matches[0], "").replace(/\)$/, "") // Getting the params as string by replacing the first match ( 'name(' ) and replacing the last ')'
+        let params = func.replace(matches[0], "").replace(/\)$/, "") // Getting the params as string by replacing the first match ( 'name(' ) and replacing the last ')'
             .split(Qeres.commasRegex).map(v => v.replace(Qeres.stripRegex, '')) // Splitting params to array & stripping the values
             .map(v => {
                 const withRegex = Qeres.queryVariablesRegex.exec(v);
                 // Resetting regex because it 'stateful'
                 Qeres.queryVariablesRegex.lastIndex = 0;
-                
+
                 return withRegex ? results[withRegex[1]] : v;
             }); // Allowing query varialbes
 
         try {
+            // Letting onParamValue to change params if needed
+            // Calling it inside try/catch to allow them throw QeresError and not break the API in case of function errors
+            if (this.onParamValue) {
+                params = params.map(v => {
+                    const value = this.onParamValue!(v);
+
+                    if (typeof value !== "undefined") {
+                        return value;
+                    }
+
+                    return v;
+                });
+            }
+
             return await executableFunction(...params);
         }
         catch (error) {
@@ -102,12 +117,18 @@ export class Qeres {
         let results = {};
 
         for (const [key, value] of Object.entries(req)) {
+            // Allowing to set variables
+            if (key.startsWith("$")) {
+                results[key.replace(/\$/, "")] = value;
+                continue;
+            }
+
             // If the value is string, We want to parse it like a function
             if (typeof (value) === "string") {
+                const temp = await this.parseFunction(value, "data", results);
+
                 const withRegex = Qeres.objVarNameRegex.exec(key);
                 Qeres.objVarNameRegex.lastIndex = 0;
-
-                const temp = await this.parseFunction(value, "data", results);
 
                 // It's used for when wanting to split objects, Like "{banana, apple}": "getBananasAndApples()"
                 if (withRegex) {
@@ -144,11 +165,11 @@ export class Qeres {
 
     // Decorators
 
-    static data(target, key, _descriptor: TypedPropertyDescriptor<any>) {
+    static data(target, key, _descriptor) {
         target[key].allowQeresData = true;
     }
 
-    static path(target, key, _descriptor: TypedPropertyDescriptor<any>) {
+    static path(target, key, _descriptor) {
         target[key].allowQeresPath = true;
     }
 }
