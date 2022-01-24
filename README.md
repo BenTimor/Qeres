@@ -1,3 +1,4 @@
+
 # Qeres - The easiest and most flexible way to create APIs
 
 ## What is Qeres?
@@ -226,6 +227,14 @@ Additionally, We can just set custom variables (without calling method) by putti
 	    },
 	    "theMessageIWanted": "hello(${stringVariable})
 	}
+
+Sometimes, You'd even like to pass variables for the FE to use. In this case you can do it by using `handleRequest` second parameter, Like this:
+
+	qeres.handleRequest(query, {
+	    apple: "banana",
+	});
+
+Now you can access `$apple` variable in your query.
 
 **Note:** You have to create the variable you want to use **before** you use it.
 
