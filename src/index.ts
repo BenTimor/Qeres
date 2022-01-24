@@ -113,7 +113,7 @@ export class Qeres {
      * This method is the main method of Qeres. Here you can give Qeres a request, And it'll return you it's response.
      * @param req The request you want to handle
      */
-    async handleRequest(req: any): Promise<any> {
+    async handleRequest(req: any, data?: any): Promise<any> {
         let results = {};
 
         for (const [key, value] of Object.entries(req)) {
@@ -125,7 +125,7 @@ export class Qeres {
 
             // If the value is string, We want to parse it like a function
             if (typeof (value) === "string") {
-                const temp = await this.parseFunction(value, "data", results);
+                const temp = await this.parseFunction(value, "data", { ...data, ...results });
 
                 const withRegex = Qeres.objVarNameRegex.exec(key);
                 Qeres.objVarNameRegex.lastIndex = 0;
@@ -151,11 +151,11 @@ export class Qeres {
             }
             // If the value is object, We want to parse it recursively
             else {
-                const tempQeres = new Qeres(await this.parseFunction(key, "path", results));
+                const tempQeres = new Qeres(await this.parseFunction(key, "path", { ...data, ...results }));
 
                 results = {
                     ...results,
-                    ...await tempQeres.handleRequest(value)
+                    ...await tempQeres.handleRequest(value, { ...data, ...results })
                 }
             }
         }
