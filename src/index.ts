@@ -113,7 +113,7 @@ export class Qeres {
      * This method is the main method of Qeres. Here you can give Qeres a request, And it'll return you it's response.
      * @param req The request you want to handle
      */
-    async handleRequest(req: any, data?: any): Promise<any> {
+    async handleRequest(req: any, data: any = {}): Promise<any> {
         let results = {};
 
         for (const [key, value] of Object.entries(req)) {
